@@ -8,7 +8,9 @@ const session = require('express-session');
 const passport = require('passport');
 const passportLocalMongoose = require('passport-local-mongoose');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
-const findOrCreate = require('mongoose-findorcreate')
+const findOrCreate = require('mongoose-findorcreate');
+const flash = require('connect-flash');
+
 
 
 const app = express();
@@ -27,6 +29,7 @@ app.use(session({
 
 app.use(passport.initialize());
 app.use(passport.session());
+app.use(flash());
 
 mongoose.connect('mongodb://localhost:27017/userDB', {useNewUrlParser: true})
 mongoose.set('useCreateIndex', true);
@@ -92,7 +95,7 @@ app.get('/login', (req, res) => {
 });
 
 app.get('/register', (req, res) => {
-    res.render('register')
+    res.render('register');           
 });
 
 app.get('/secrets', (req, res) => {
@@ -100,6 +103,7 @@ app.get('/secrets', (req, res) => {
     User.find({'secret': {$ne: null}}, (err, foundUsers) => {
         if (err){
             console.log(err);
+            res.json(err);
             
         } else {
             if (foundUsers) {
@@ -148,7 +152,8 @@ app.post('/register', (req, res) => {
     User.register({username: req.body.username}, req.body.password, (err, user) => {
         if (err) {
             console.log(err);
-            
+            req.session.error = err;
+            res.redirect('/register');       
         } else {
             passport.authenticate('local')(req, res, () => {
                 res.redirect('/secrets');
